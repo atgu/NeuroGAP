@@ -36,6 +36,8 @@ If data is stored on local machine -
 	
 	
 References: 
-	Anderson, Carl A et al. “Data quality control in genetic case-control association studies.” Nature protocols vol. 5,9 (2010): 1564-73. doi:10.1038/nprot.2010.116
+	Anderson, Carl A et al. “Data quality control in genetic case-control association studies.” Nature protocols vol. 5,9 	      (2010): 1564-73. doi:10.1038/nprot.2010.116
+	
 	Hail Team. Hail 0.2.30-2ae07d872f43. https://github.com/hail-is/hail/releases/tag/0.2.30.
-Lam, M. et al. RICOPILI: Rapid Imputation for COnsortias PIpeLIne. Bioinformatics https://doi.org/10.1093/bioinformatics/btz633 (2019)
+	
+	Lam, M. et al. RICOPILI: Rapid Imputation for COnsortias PIpeLIne. Bioinformatics 					https://doi.org/10.1093/bioinformatics/btz633 (2019)
