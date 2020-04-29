@@ -1,18 +1,18 @@
-# Pilot data VCF paths
+# Pilot data VCFs on Terra
 kenyaMoi_vcf = "gs://fc-087888c3-eb94-4828-9926-d8d713eef821/NeuroGap_Koenen_Atwoli_Kenya-MoiPilot_GSA-MD_v1" \
-          "/NeuroGap_Koenen_Atwoli_Kenya-MoiPilot_GSA-MD_v1.vcf.gz "
+          "/NeuroGap_Koenen_Atwoli_Kenya-MoiPilot_GSA-MD_v1.vcf.gz"
 
 uganda_vcf = "gs://fc-cd517a08-fbb2-451f-a104-d21b32c3663c/NeuroGap_Koenen_Akena_UgandaPilot_GSA-MD_v1" \
-          "/NeuroGap_Koenen_Akena_UgandaPilot_GSA-MD_v1.vcf.gz "
+          "/NeuroGap_Koenen_Akena_UgandaPilot_GSA-MD_v1.vcf.gz"
 
 kenyaKemri_vcf = "gs://fc-abcbfa13-e1ff-4edb-bbb9-8ad757b3f2e0/NeuroGap_Koenen_Newton__Kenya-KEMRI_GSA-MD" \
-          "/NeuroGap_Koenen_Newton__Kenya-KEMRI_GSA-MD.vcf.gz "
+          "/NeuroGap_Koenen_Newton__Kenya-KEMRI_GSA-MD.vcf.gz"
 
 ethiopia_vcf = "gs://fc-8b77bd6a-19a6-42aa-9670-867fbd768b74/NeuroGap_Koenen_Teferra_Ethiopia_GSA-MD" \
-          "/NeuroGap_Koenen_Teferra_Ethiopia_GSA-MD.vcf.gz "
+          "/NeuroGap_Koenen_Teferra_Ethiopia_GSA-MD.vcf.gz"
 
 southAfrica_vcf = "gs://fc-b2479a12-eaf2-4f96-891f-920a0191c252/NeuroGap_Koenen_Stein_SouthAfrica_GSA-MD" \
-          "/NeuroGap_Koenen_Stein_SouthAfrica_GSA-MD.vcf.gz "
+          "/NeuroGap_Koenen_Stein_SouthAfrica_GSA-MD.vcf.gz"
 
 
 # Post QC NeuroGAP pilot data
