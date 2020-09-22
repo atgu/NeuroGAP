@@ -1,0 +1,6 @@
+{
+  "BamtoUbam.input_samples_list": "gs://african-seq-data/uganda2k/inputSamplesFile.txt",
+  "BamtoUbam.ref_index": "gs://african-seq-data/genome_reference/hs37d5.fa.gz.fai",
+  "BamtoUbam.ref_fasta": "gs://african-seq-data/genome_reference/hs37d5.fa"
+}
+
