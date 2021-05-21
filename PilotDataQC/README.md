@@ -4,12 +4,12 @@ Dependencies: Jupyter Notebook, Python plus Hail 0.2.30 or later
 
 The QC steps and filters used were adapted from Ricopili and Anderson et al. 2010. 
 The QC Filtering steps are conducted in the following order with these metrics: 
-	SNP Call Rate - SNPs with > 5% missingness are removed 
-	Sample Call Rate - Individuals with > 2% missingness are removed
-	Sex Violations - Individuals whose reported sex do not match genotypic sex are removed
-	Minor Allele Frequency - SNPs with MAF < 0.5% are removed
-	Hardy Weinberg Equilibrium - SNPs with a HWE p-val < 1e-03 are removed
-	Relatedness filtering using PC-Relate with 10 PCs - Individuals with kinship coefficient > .125 removed
+* SNP Call Rate - SNPs with > 5% missingness are removed 
+* Sample Call Rate - Individuals with > 2% missingness are removed
+* Sex Violations - Individuals whose reported sex do not match genotypic sex are removed
+* Minor Allele Frequency - SNPs with MAF < 0.5% are removed
+* Hardy Weinberg Equilibrium - SNPs with a HWE p-val < 1e-03 are removed
+* Relatedness filtering using PC-Relate with 10 PCs - Individuals with kinship coefficient > .125 removed
 
 Before removing, variants or samples which fail a QC filter are flagged as True for ease of filtering and the ability to analyze which QC filters certain datasets are failing.
 	
