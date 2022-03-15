@@ -1,0 +1,127 @@
+Langauge,Code,uganda,ethio,kenya,sa,glotto_code,lang_family_auto,lang_family_auto_code,lang_family_manual,lang_family_manual_code
+Acholi,1,1,0,0,0,acol1236,Nilotic,11,Nilo-Saharan,7
+Adhola,2,1,0,0,0,adho1243,Nilotic,11,Nilo-Saharan,7
+Afarigna,3,0,1,0,0,afar1241,Afro-Asiatic,1,Afro-Asiatic,1
+Afrikaans,4,0,0,0,1,afri1274,Indo-European,7,Indo-European-Afrikaans,5
+Alabigna or Kebenigna,5,0,1,0,0,alab1254,Afro-Asiatic,1,Afro-Asiatic,1
+Alur,6,1,0,0,0,alur1250,Nilotic,11,Nilo-Saharan,7
+Amba,7,1,0,0,0,amba1263,Atlantic-Congo,2,Atlantic-Congo,2
+Amharic or Amarigna,8,0,1,0,0,amha1245,Afro-Asiatic,1,Afro-Asiatic,1
+Anuakigna,9,0,1,0,0,anua1242,Nilotic,11,Nilo-Saharan,7
+Arabic,10,1,1,1,1,stan1318,Afro-Asiatic,1,Afro-Asiatic,1
+Argobigna,11,0,1,0,0,argo1244,Afro-Asiatic,1,Afro-Asiatic,1
+Aringa,12,1,0,0,0,arin1244,Central Sudanic,3,Nilo-Saharan,7
+Awigna,13,0,1,0,0,awng1244,Afro-Asiatic,1,Afro-Asiatic,1
+Bari,14,1,0,0,0,bari1284,Nilotic,11,Nilo-Saharan,7
+Birwa,15,0,0,0,1,birw1238,Atlantic-Congo,2,Atlantic-Congo,2
+Borana,16,0,0,1,0,bora1271,Afro-Asiatic,1,Afro-Asiatic,1
+Camtho,17,0,0,0,1,camt1236,Speech Register,NA,NA,NA
+Chichony-Chidzihana-Chikauma or Kichonyi,18,0,0,1,0,chon1287,Atlantic-Congo,2,Atlantic-Congo,2
+Chidigo or Kidigo,19,0,0,1,0,digo1243,Atlantic-Congo,2,Atlantic-Congo,2
+Chiduruma or Kiduruma,20,0,0,1,0,duru1249,Atlantic-Congo,2,Atlantic-Congo,2
+Chigiryama or Kigiryama,21,0,0,1,0,giry1241,Atlantic-Congo,2,Atlantic-Congo,2
+Chijibana or Kijibana,22,0,0,1,0,jiba1245,Atlantic-Congo,2,Atlantic-Congo,2
+Chikambe or Kikambe,23,0,0,1,0,kamb1298,Atlantic-Congo,2,Atlantic-Congo,2
+Chikauma or Kikauma,24,0,0,1,0,kaum1238,Atlantic-Congo,2,Atlantic-Congo,2
+Chipokomo or Kipfokomo,25,0,0,1,0,poko1261,Atlantic-Congo,2,Atlantic-Congo,2
+Chirabai or Kirabai,26,0,0,1,0,raba1248,Atlantic-Congo,2,Atlantic-Congo,2
+Chiribe or Kiribe,27,0,0,1,0,ribe1238,Atlantic-Congo,2,Atlantic-Congo,2
+chitaita or kitaita,28,0,0,1,0,tait1250,Atlantic-Congo,2,Atlantic-Congo,2
+Dholuo,29,0,0,1,0,luok1236,Nilotic,11,Nilo-Saharan,7
+Ekegusii,30,0,0,1,0,gusi1247,Atlantic-Congo,2,Atlantic-Congo,2
+English,31,1,1,1,1,stan1293,Indo-European,7,West-Indo-European,8
+Flaaitaal,32,0,0,0,1,tsot1242,Speech Register,NA,NA,NA
+French,33,1,1,1,1,stan1290,Indo-European,7,West-Indo-European,8
+Fumbira,34,1,0,0,0,rufu1238,Atlantic-Congo,2,Atlantic-Congo,2
+Gail,35,0,0,0,1,gail1235,Unclassifiable,NA,NA,NA
+Gamogna,36,0,1,0,0,gamo1243,Ta-Ne-Omotic,14,Afro-Asiatic,1
+Gedeogna,37,0,1,0,0,gede1246,Afro-Asiatic,1,Afro-Asiatic,1
+Gikuyu or Kikuyu,38,0,0,1,0,kiku1240,Atlantic-Congo,2,Atlantic-Congo,2
+Gofagna,39,0,1,0,0,gofa1235,Ta-Ne-Omotic,14,Afro-Asiatic,1
+Gumuzigna,40,0,1,0,0,gumu1250,Gumuz,6,Nilo-Saharan,7
+Gungu,41,1,0,0,0,gung1250,Atlantic-Congo,2,Atlantic-Congo,2
+Gwere,42,1,0,0,0,gwer1238,Atlantic-Congo,2,Atlantic-Congo,2
+Hadiyyagna,43,0,1,0,0,hadi1240,Afro-Asiatic,1,Afro-Asiatic,1
+Hararigna,44,0,1,0,0,hara1271,Afro-Asiatic,1,Afro-Asiatic,1
+Hindi,45,0,0,0,1,hind1269,Indo-European,7,Indo-Aryan,4
+Kafigna,46,0,1,0,0,kafa1242,Ta-Ne-Omotic,14,Afro-Asiatic,1
+Kakwa,47,1,0,0,0,kakw1240,Nilotic,11,Nilo-Saharan,7
+Kalenjin,48,0,0,1,0,kale1246,Nilotic,11,Nilo-Saharan,7
+Kamba,49,0,0,1,0,kamb1297,Atlantic-Congo,2,Atlantic-Congo,2
+Kambaatigna,50,0,1,0,0,kamb1316,Afro-Asiatic,1,Afro-Asiatic,1
+Khoekhoe,51,0,0,0,1,nama1264,Khoe-Kwadi,8,Khoisan,6
+Kiembu,52,0,0,1,0,embu1241,Atlantic-Congo,2,Atlantic-Congo,2
+Kimeru,53,0,0,1,0,kamb1297,Atlantic-Congo,2,Atlantic-Congo,2
+Kipsigis,54,0,0,1,0,kips1239,Nilotic,11,Nilo-Saharan,7
+Kistanegna,55,0,1,0,0,kist1241,Afro-Asiatic,1,Afro-Asiatic,1
+Kiswahili,56,0,0,1,0,swah1253,Atlantic-Congo,2,Atlantic-Congo,2
+Konzo,57,1,0,0,0,konz1239,Atlantic-Congo,2,Atlantic-Congo,2
+Korana,58,0,0,0,1,kora1292,Khoe-Kwadi,8,Khoisan,6
+Kumam,59,1,0,0,0,kuma1275,Nilotic,11,Nilo-Saharan,7
+Kung-Ekoka,60,0,0,0,1,kung1261,Kxa,10,Khoisan,6
+Kupsapiiny,61,1,0,0,0,kups1238,Nilotic,11,Nilo-Saharan,7
+Kuria,62,0,0,1,0,kuri1259,Atlantic-Congo,2,Atlantic-Congo,2
+Lango,63,1,0,0,0,lang1324,Nilotic,11,Nilo-Saharan,7
+Luganda,64,1,0,0,0,gand1255,Atlantic-Congo,2,Atlantic-Congo,2
+Lugbara,65,1,0,0,0,lugb1240,Central Sudanic,3,Nilo-Saharan,7
+Ma'di,66,1,0,0,0,sout2828,Central Sudanic,3,Nilo-Saharan,7
+Maasai,67,0,0,1,0,masa1300,Nilotic,11,Nilo-Saharan,7
+Masaaba,68,1,0,0,0,masa1299,Atlantic-Congo,2,Atlantic-Congo,2
+Mesqanigna,69,0,1,0,0,mesq1240,Afro-Asiatic,1,Afro-Asiatic,1
+Mijikenda,70,0,0,1,0,miji1238,Atlantic-Congo,2,Atlantic-Congo,2
+Nandi,71,0,0,1,0,nand1266,Nilotic,11,Nilo-Saharan,7
+Ndebele or isiNdebele,72,0,0,0,1,sout2808,Atlantic-Congo,2,Atlantic-Congo,2
+Ndrulo,73,1,0,0,0,ndru1234,Central Sudanic,3,Nilo-Saharan,7
+Ng'akarimojong,74,1,0,0,0,kara1483,Nilotic,11,Nilo-Saharan,7
+Nu,75,0,0,0,1,nuuu1241,Tuu,15,Khoisan,6
+Nubi,76,1,0,0,0,nubi1253,Afro-Asiatic,1,Afro-Asiatic,1
+Nuerigna,77,0,1,0,0,nuer1246,Nilotic,11,Nilo-Saharan,7
+Nyole,78,1,0,0,0,nyol1238,Atlantic-Congo,2,Atlantic-Congo,2
+Nyoro,79,1,0,0,0,nyor1246,Atlantic-Congo,2,Atlantic-Congo,2
+Oluluyia,80,0,0,1,0,cent2288,Atlantic-Congo,2,Atlantic-Congo,2
+Oorlams,81,0,0,0,1,oorl1238,Indo-European,7,Indo-European-Afrikaans,5
+Oromiffa or Oromigna,82,0,1,0,0,east2652,Afro-Asiatic,1,Afro-Asiatic,1
+Pidgin Bantu,83,0,0,0,1,fana1235,Pidgin,12,Atlantic-Congo,2
+Pokot,84,1,0,1,0,poko1263,Nilotic,11,Nilo-Saharan,7
+Portuguese,85,1,1,1,1,port1283,Indo-European,7,West-Indo-European,8
+Ronga,86,0,0,0,1,rong1268,Atlantic-Congo,2,Atlantic-Congo,2
+Runyankole,87,1,0,0,0,nyan1307,Atlantic-Congo,2,Atlantic-Congo,2
+Saamia,88,1,0,0,0,saam1283,Atlantic-Congo,2,Atlantic-Congo,2
+Samburu,89,0,0,1,0,samb1315,Nilotic,11,Nilo-Saharan,7
+Seroa,90,0,0,0,1,sero1239,Tuu,15,Khoisan,6
+Shekkachigna,91,0,1,0,0,shek1244,Ta-Ne-Omotic,14,Afro-Asiatic,1
+Shekogna,92,0,1,0,0,shek1245,Dizoid,4,Afro-Asiatic,1
+Sidamigna,93,0,1,0,0,sida1246,Afro-Asiatic,1,Afro-Asiatic,1
+Siltigna,94,0,1,0,0,silt1240,Afro-Asiatic,1,Afro-Asiatic,1
+Soga,95,1,0,0,0,soga1242,Atlantic-Congo,2,Atlantic-Congo,2
+Somali,96,0,0,1,0,soma1255,Afro-Asiatic,1,Afro-Asiatic,1
+Somaligna,97,0,1,0,0,soma1255,Afro-Asiatic,1,Afro-Asiatic,1
+Soo,98,1,0,0,0,sooo1256,Kuliak,9,Nilo-Saharan,7
+Sotho- Northern or Sepedi,99,0,0,0,1,pedi1238,Atlantic-Congo,2,Atlantic-Congo,2
+Sotho- Southern or Sesotho,100,0,0,0,1,sout2807,Atlantic-Congo,2,Atlantic-Congo,2
+Swahili,101,1,0,0,1,swah1253,Atlantic-Congo,2,Atlantic-Congo,2
+Swati or Siwati,102,0,0,0,1,swat1243,Atlantic-Congo,2,Atlantic-Congo,2
+Tamil,103,0,0,0,1,tami1289,Dravidian,5,Dravidian,3
+Taveta,104,0,0,1,0,tave1240,Atlantic-Congo,2,Atlantic-Congo,2
+Teso,105,1,0,1,0,teso1249,Nilotic,11,Nilo-Saharan,7
+Tigrigna,106,0,1,0,0,tigr1271,Afro-Asiatic,1,Afro-Asiatic,1
+Tooro,107,1,0,0,0,toor1238,Atlantic-Congo,2,Atlantic-Congo,2
+Tsonga or Xitsonga,108,0,0,0,1,tson1249,Atlantic-Congo,2,Atlantic-Congo,2
+Tswa,109,0,0,0,1,tswa1255,Atlantic-Congo,2,Atlantic-Congo,2
+Tswana or Setswana,110,0,0,0,1,tswa1253,Atlantic-Congo,2,Atlantic-Congo,2
+Turkana,111,0,0,1,0,turk1308,Nilotic,11,Nilo-Saharan,7
+Urdu,112,0,0,0,1,urdu1245,Indo-European,7,Indo-Aryan,4
+Venda or Tshivenda,113,0,0,0,1,vend1245,Atlantic-Congo,2,Atlantic-Congo,2
+Wolaytigna,114,0,1,0,0,wola1242,Ta-Ne-Omotic,14,Afro-Asiatic,1
+Wolenigna,115,0,1,0,0,wola1253,Afro-Asiatic,1,Afro-Asiatic,1
+Xhosa or isiXhosa,116,0,0,0,1,xhos1239,Atlantic-Congo,2,Atlantic-Congo,2
+Xiri,117,0,0,0,1,xiri1242,Khoe-Kwadi,8,Khoisan,6
+Yiddish,118,0,0,0,1,yidd1255,Indo-European,7,West-Indo-European,8
+Zulu or isiZulu,119,0,0,0,1,zulu1248,Atlantic-Congo,2,Atlantic-Congo,2
+Guragegna,120,0,1,0,0,seba1251,Afro-Asiatic,1,Afro-Asiatic,1
+Rukiga,121,1,0,0,0,chig1238,Atlantic-Congo,2,Atlantic-Congo,2
+Kinyarwanda/Runyarwanda,122,1,0,0,0,kiny1244,Atlantic-Congo,2,Atlantic-Congo,2
+Shona,123,0,0,0,1,shon1251,Atlantic-Congo,2,Atlantic-Congo,2
+Other (Describe),999,1,1,1,1,,NA,NA,NA,NA
+Unknown,-777,1,1,1,1,,NA,NA,NA,NA
+Chichewa,124,0,0,0,1,nyan1308,Atlantic-Congo,2,Atlantic-Congo,2
