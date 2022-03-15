@@ -1,0 +1,127 @@
+Langauge	Lang_y	Dialect_y	Subdialect_y	Code	uganda	ethio	kenya	sa	glotto_code	phoible_inv	exclude_pheno_analysis	exclude_geno_analysis
+Acholi	Acoli			1	1	0	0	0	acol1236	1433		0
+Adhola	Adhola			2	1	0	0	0	adho1243	448		0
+Afarigna	Afar			3	0	1	0	0	afar1241	1342		0
+Afrikaans	Afrikaans			4	0	0	0	1	afri1274	1395		0
+Alabigna or Kebenigna	Alaba-K'abeena			5	0	1	0	0	alab1254	1451		0
+Alur	Alur			6	1	0	0	0	alur1250			0
+Amba	Amba			7	1	0	0	0	amba1263			0
+Amharic or Amarigna	Amharic			8	0	1	0	0	amha1245	219		0
+Anuakigna	Anuak			9	0	1	0	0	anua1242	1165		0
+Arabic	Arabic			10	1	1	1	1	stan1318	2157		0
+Argobigna	Argobba			11	0	1	0	0	argo1244	1396		0
+Aringa	Aringa			12	1	0	0	0	arin1244	1425		0
+Awigna	Awngi			13	0	1	0	0	awng1244	234		0
+Bari	Bari			14	1	0	0	0	bari1284			0
+Birwa	Birwa			15	0	0	0	1	birw1238			0
+Borana	Borana-Arsi-Guji Oromo			16	0	0	1	0	bora1271	1362		0
+Camtho	Camtho			17	0	0	0	1	camt1236	NA		1
+Chichony-Chidzihana-Chikauma or Kichonyi	Mijikenda	Chonyi-Dzihana-Kauma		18	0	0	1	0	chon1287	1586		0
+Chidigo or Kidigo	Mijikenda	Digo		19	0	0	1	0	digo1243	1586		0
+Chiduruma or Kiduruma	Mijikenda	Duruma		20	0	0	1	0	duru1249	1586		0
+Chigiryama or Kigiryama	Mijikenda	Giryama		21	0	0	1	0	giry1241	1586		0
+Chijibana or Kijibana	Mijikenda	Giryama	Jibana	22	0	0	1	0	jiba1245	1586		0
+Chikambe or Kikambe	Mijikenda	Giryama	Kambe	23	0	0	1	0	kamb1298	1586		0
+Chikauma or Kikauma	Mijikenda	Giryama	Kauma	24	0	0	1	0	kaum1238	1586		0
+Chipokomo or Kipfokomo	Pokomo			25	0	0	1	0	poko1261			0
+Chirabai or Kirabai	Mijikenda	Giryama	Rabai	26	0	0	1	0	raba1248			0
+Chiribe or Kiribe	Mijikenda	Giryama	Ribe	27	0	0	1	0	ribe1238			0
+chitaita or kitaita	Taita			28	0	0	1	0	tait1250			0
+Dholuo	Dholuo			29	0	0	1	0	luok1236	694		0
+Ekegusii	Gusii			30	0	0	1	0	gusi1247			0
+English	English			31	1	1	1	1	stan1293	160		1
+Flaaitaal	Flaaitaal			32	0	0	0	1	tsot1242	NA		1
+French	French			33	1	1	1	1	stan1290	162		0
+Fumbira	Kinyarawanda	Fumbira		34	1	0	0	0	rufu1238	911		0
+Gail	Gail			35	0	0	0	1	gail1235	NA		1
+Gamogna	Gamo			36	0	1	0	0	gamo1243	1481		0
+Gedeogna	Gedeo			37	0	1	0	0	gede1246			0
+Gikuyu or Kikuyu	Kikuyu			38	0	0	1	0	kiku1240	748		0
+Gofagna	Gofa			39	0	1	0	0	gofa1235			0
+Gumuzigna	Gumuz			40	0	1	0	0	gumu1250	1475		0
+Gungu	Gungu			41	1	0	0	0	gung1250			0
+Gwere	Gwere			42	1	0	0	0	gwer1238			0
+Hadiyyagna	Hadiyya			43	0	1	0	0	hadi1240	1363		0
+Hararigna	Harari			44	0	1	0	0	hara1271	1397		0
+Hindi	Hindi			45	0	0	0	1	hind1269	2542		0
+Kafigna	Kafa			46	0	1	0	0	kafa1242	394		0
+Kakwa	Kakwa			47	1	0	0	0	kakw1240			0
+Kalenjin	Kalenjin			48	0	0	1	0	kale1246			0
+Kamba	Kamba			49	0	0	1	0	kamb1297	1443		0
+Kambaatigna	Kambaata			50	0	1	0	0	kamb1316	1373		0
+Khoekhoe	Nama			51	0	0	0	1	nama1264	482		0
+Kiembu	Embu			52	0	0	1	0	embu1241			0
+Kimeru	Meru			53	0	0	1	0	kamb1297	1641		0
+Kipsigis	Kalenjin	Kipsigis		54	0	0	1	0	kips1239	1387		0
+Kistanegna	Kistane			55	0	1	0	0	kist1241	1457		0
+Kiswahili	Swahili			56	0	0	1	0	swah1253	823		0
+Konzo	Konzo			57	1	0	0	0	konz1239			0
+Korana	Korana			58	0	0	0	1	kora1292			0
+Kumam	Kumam			59	1	0	0	0	kuma1275			0
+Kung-Ekoka	North-Central Ju			60	0	0	0	1	kung1261	1383		0
+Kupsapiiny	Kupsabiny			61	1	0	0	0	kups1238	428		0
+Kuria	Kuria			62	0	0	1	0	kuri1259	758		0
+Lango	Lango			63	1	0	0	0	lang1324	1445		0
+Luganda	Ganda			64	1	0	0	0	gand1255	770		0
+Lugbara	Lugbara			65	1	0	0	0	lugb1240	771		0
+Ma'di	Ma'di			66	1	0	0	0	sout2828	1292		0
+Maasai	Masai			67	0	0	1	0	masa1300	154		0
+Masaaba	Masaaba			68	1	0	0	0	masa1299	1367		0
+Mesqanigna	Mesqan			69	0	1	0	0	mesq1240	1458		0
+Mijikenda	Mijikenda			70	0	0	1	0	miji1238			0
+Nandi	Kalenjin	Nandi		71	0	0	1	0	nand1266	954		0
+Ndebele or isiNdebele	Ndebele			72	0	0	0	1	sout2808			0
+Ndrulo	Ndrulo			73	1	0	0	0	ndru1234			0
+Ng'akarimojong	Karamojong			74	1	0	0	0	kara1483	1351		0
+Nu	N||ng			75	0	0	0	1	nuuu1241			0
+Nubi	Nubi			76	1	0	0	0	nubi1253	967		0
+Nuerigna	Nuer			77	0	1	0	0	nuer1246	1534		0
+Nyole	Nyole			78	1	0	0	0	nyol1238	1447		0
+Nyoro	Nyoro			79	1	0	0	0	nyor1246			0
+Oluluyia	Luyia			80	0	0	1	0	cent2288			0
+Oorlams	Oorlams			81	0	0	0	1	oorl1238	NA		0
+Oromiffa or Oromigna	Oromo			82	0	1	0	0	east2652	1552		0
+Pidgin Bantu	Fanagalo			83	0	0	0	1	fana1235	NA		0
+Pokot	Kalenjin	Pokoot		84	1	0	1	0	poko1263	1394		0
+Portuguese	Portuguese			85	1	1	1	1	port1283	163		0
+Ronga	Ronga			86	0	0	0	1	rong1268	1546		0
+Runyankole	Nyankole			87	1	0	0	0	nyan1307	990		0
+Saamia	Saamia			88	1	0	0	0	saam1283	1489		0
+Samburu	Samburu			89	0	0	1	0	samb1315			0
+Seroa	Seroa			90	0	0	0	1	sero1239			0
+Shekkachigna	Shekkacho			91	0	1	0	0	shek1244			0
+Shekogna	Sheko			92	0	1	0	0	shek1245	457		0
+Sidamigna	Sidaama			93	0	1	0	0	sida1246	1080		0
+Siltigna	Silt'e			94	0	1	0	0	silt1240	1414		0
+Soga	Soga			95	1	0	0	0	soga1242			0
+Somali	Somali			96	0	0	1	0	soma1255	127		0
+Somaligna	Somali			97	0	1	0	0	soma1255	127		0
+Soo	Soo			98	1	0	0	0	sooo1256	1476		0
+Sotho- Northern or Sepedi	Pedi			99	0	0	0	1	pedi1238			0
+Sotho- Southern or Sesotho	Sesotho			100	0	0	0	1	sout2807			0
+Swahili	Swahili			101	1	0	0	1	swah1253	823		0
+Swati or Siwati	Swati			102	0	0	0	1	swat1243			0
+Tamil	Tamil			103	0	0	0	1	tami1289	1058		0
+Taveta	Taveta			104	0	0	1	0	tave1240			0
+Teso	Teso			105	1	0	1	0	teso1249			0
+Tigrigna	Tigrinya			106	0	1	0	0	tigr1271	1350		0
+Tooro	Tooro			107	1	0	0	0	toor1238			0
+Tsonga or Xitsonga	Tsonga			108	0	0	0	1	tson1249			0
+Tswa	Tswa			109	0	0	0	1	tswa1255			0
+Tswana or Setswana	Tswana			110	0	0	0	1	tswa1253			0
+Turkana	Turkana			111	0	0	1	0	turk1308			0
+Urdu	Urdu			112	0	0	0	1	urdu1245	2466		0
+Venda or Tshivenda	Venda			113	0	0	0	1	vend1245			0
+Wolaytigna	Wolaytta			114	0	1	0	0	wola1242	1364		0
+Wolenigna	Wolane			115	0	1	0	0	wola1253			0
+Xhosa or isiXhosa	Xhosa			116	0	0	0	1	xhos1239	1319		0
+Xiri	Xiri			117	0	0	0	1	xiri1242			0
+Yiddish	Yiddish			118	0	0	0	1	yidd1255	2399		0
+Zulu or isiZulu	Zulu			119	0	0	0	1	zulu1248	147		0
+Guragegna	Gurage			120	0	1	0	0	seba1251	1463		0
+Rukiga	Chiga			121	1	0	0	0	chig1238			0
+Kinyarwanda/Runyarwanda	Kinyarawanda			122	1	0	0	0	kiny1244	911		0
+Shona	Shona			123	0	0	0	1	shon1251	1008		0
+Other (Describe)				999	1	1	1	1			0	1
+Unknown				-777	1	1	1	1			0	1
+Chichewa	Nyanja			124	0	0	0	1	nyan1308			0
