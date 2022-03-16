@@ -1,0 +1,1627 @@
+---
+title: "Relationships between geography, genetics, and language in the neuroGAP dataset"
+output: neuroGAP_procrustes_html
+---
+
+
+## Pre-processing and loading data:
+```{r}
+require(ggplot2)
+require(vegan)
+require(maps)
+
+# minor data management: need to remove extra spaces in space-delineated file
+neuroGAP_data <- read.table(
+  text = sub("South Africa", "South_Africa",
+             readLines("data_for_procrustes/NeuroGAP_ethnologuisticPhenos_PCs.txt")),
+  header = T, sep = " ")
+
+neuroGAP_auto_PC <- read.table(
+  "data_for_procrustes/pcs.NeuroGap_only_autosomes_pcs",
+  header = T, sep = "\t")
+neuroGAP_X_PC <- read.table(
+  "data_for_procrustes/pcs.NeuroGAP_pilot_clean_LD_pruned_23_chrX_no_par_pcs",
+  header = T, sep = "\t")
+neuroGAP_7_PC <- read.table(
+  "data_for_procrustes/pcs.NeuroGAP_pilot_clean_LD_pruned_chr7_pcs",
+  header = T, sep = "\t")
+neuroGAP_22_PC <- read.table(
+  "data_for_procrustes/pcs.NeuroGAP_pilot_clean_LD_pruned_chr22_pcs",
+  header = T, sep = "\t")
+
+neuroGAP_auto_PC_EAfr <- read.table(
+  "data_for_procrustes/pcs.NeuroGap_only_no_UCT-autosomes_pcs",
+  header = T, sep = "\t")
+neuroGAP_X_PC_EAfr <- read.table(
+  "data_for_procrustes/pcs.NeuroGap_only_no_UCT-chrX_pcs",
+  header = T, sep = "\t")
+neuroGAP_7_PC_EAfr <- read.table(
+  "data_for_procrustes/pcs.NeuroGap_only_no_UCT-chr7_pcs",
+  header = T, sep = "\t")
+neuroGAP_22_PC_EAfr <- read.table(
+  "data_for_procrustes/pcs.NeuroGap_only_no_UCT-chr22_pcs",
+  header = T, sep = "\t")
+
+
+# neuroGAP language data w/ manually added language IDs, PHOIBLE inventory IDs for access to linguistic data
+lang_codes_upd <- read.table(
+  "data_for_procrustes/LanguageCodes_glotto_phoible.1.tsv",
+  header = T, sep = "\t", quote = '"')
+
+# Study site dictionary; for details, see the neuroGAP
+#  codebook ("What is the study site?") and NeuroGAP_Recruiting_Hospitals.csv
+# NOTE: file had to be edited to add several unmarked hospitals
+hospital_locations <- read.table(
+  "data_for_procrustes/NeuroGAP_Recruiting_Hospitals.csv", header = T,
+  sep = ",", quote = "")
+study_site_dict <- matrix(
+  NA, nrow = length(
+    unique(neuroGAP_data$study_site)), ncol = 2)
+study_site_dict[, 1] <- sort(unique(neuroGAP_data$study_site))
+study_site_dict[, 2] <- c(4, 5, 2, 36, 1, 31, 30, 6, 37, 38, 39, 40, 41)
+
+# associate each individual with a study site location
+neuroGAP_data$study_site_Latitude <- hospital_locations$Latitude[
+  sapply(neuroGAP_data$study_site, function(d) {
+    study_site_dict[which(study_site_dict[, 1] == d), 2]
+    })
+]
+neuroGAP_data$study_site_Longitude <- hospital_locations$Longitude[
+  sapply(neuroGAP_data$study_site, function(d) {
+    study_site_dict[which(study_site_dict[, 1] == d), 2]
+  })
+]
+
+# load helper functions:
+source("procrustes_misc_fxns.R")
+
+```
+
+
+## Using the glottolog database, get metadata (location & language family) for each available language.
+```{r}
+# glottolog language database, v4.2.1 (https://github.com/glottolog/glottolog/releases/tag/v4.2.1)
+# specifically, the languoids/tree directory
+tree_dir <- NULL
+if (is.null(tree_dir)) stop(
+  "Set 'tree_dir' to the directory with the glottolog data. E.g. 'data_for_procrustes/tree'"
+)
+wd <- getwd(); setwd(tree_dir); lang_hierarchy <- list.dirs()
+setwd(wd)
+
+lang_codes_lang_hierarchy <- 
+  sub("^./", "",
+      unlist(lapply(lang_codes_upd$glotto_code,
+                function(lang) {
+                  grep(lang, lang_hierarchy, value = T)[1]
+  })), fixed = FALSE)
+# sometimes the previous command fails if run from source. Not sure why...
+if (is.na(lang_codes_lang_hierarchy[1]) | sum(is.na(lang_codes_lang_hierarchy)) != 0) {
+  stop("Code execution failed. Try rerunning or running from console.")
+}
+lang_codes_families <- sub("\\./(.{8})/.*", "\\1", lang_codes_lang_hierarchy, fixed = FALSE)
+
+lang_family_names <- lang_lati <- lang_long <- c()
+for (lang in 1:length(lang_codes_families)) {
+  
+  # get family name from glottolog info
+  family <- lang_codes_families[lang]
+  
+  family_name <- system(
+    paste0("grep 'name = ' ", tree_dir, family, "/md.ini | sed 's/.* = //' | tr -d '\r'"),
+    intern = T, ignore.stderr = T)
+  if (length(family_name) > 0) {
+    lang_family_names <- c(lang_family_names, family_name)
+  } else {
+    lang_family_names <- c(lang_family_names, NA)
+  }
+  
+  # get lat/long from glottolog info
+  md_ini <- paste0(tree_dir, lang_codes_lang_hierarchy[lang], "/md.ini")
+  while (file.exists(md_ini)) {
+    # Sometimes the metadata is missing for dialects, and the main language (higher in the classification hierarchy) needs to be accessed.
+    # If longitude/latitude are recorded, extract those; otherwise, go up in the hierarchy.
+    if (any(grepl("longitude = ", readLines(md_ini)))) {
+      lang_lati <- c(
+        lang_lati,
+        as.numeric(sub("latitude = ", "",
+                       grep("latitude = ", readLines(md_ini), value = T)))
+        )
+      lang_long <- c(
+        lang_long,
+        as.numeric(sub("longitude = ", "",
+                       grep("longitude = ", readLines(md_ini), value = T)))
+        )
+      break
+    } else {
+      md_ini <- sub("(.{8})/md\\.ini", "md.ini", md_ini, fixed = FALSE)
+    }
+  }
+  if (! file.exists(md_ini)) {
+    lang_lati <- c(lang_lati, NA)
+    lang_long <- c(lang_long, NA)
+  }
+}
+
+# manually add data for "Gumuzigna" "Mijikenda" "Oluluyia" and "Yiddish":
+#  Gumuz <- data from Northern Gumuz language (gumu1244)
+#  Mijikenda <- data from Digo language (digo1243)
+#  Oluluyia <- data from OluTsotso dialect(tsot1241)
+#  Yiddish <- data from Eastern Yiddish dialect (east2295)
+# For Other & Unknown <- NA
+lang_long[which(is.na(lang_long))] <- c(35.93,  39.1752, 34.6961, 19.42, NA, NA)
+lang_lati[which(is.na(lang_lati))] <- c(11.05, -4.62101,  0.2975, 51.75, NA, NA)
+
+lang_codes_tmp <- read.csv("../data/LanguageCodes_withLangFamilies.csv")
+lang_codes_upd$lang_family <- lang_codes_tmp$lang_family_manual; rm(lang_codes_tmp)
+
+lang_codes_upd$latitude <- lang_lati
+lang_codes_upd$longitude <- lang_long
+
+rm(lang_codes_families, family_name, family,
+   lang_codes_lang_hierarchy, lang_hierarchy,
+   lang_lati, lang_long)
+
+```
+
+
+## phoible data import and processing (for linguistic analyses)
+```{r}
+require(stringi)
+
+## starting with aggregate phoible data, create a matrix of language X binary phoneme presence-absence
+phoible_aggr <- read.table("../phoible/data/phoible.csv", header = T, sep = ",", quote = '\"', as.is = T, encoding = "unknown")
+
+# from phoible data, extract major features
+phoible_phonemes_major <- unique(sort(unlist(stri_extract_all(regex="[^|<> ]*", str=phoible_aggr$Phoneme))))
+phoible_phonemes_all <- unique(sort(unlist(stri_extract_all(regex="[^|<> ]*", str=unlist(phoible_aggr[,c(7,8)])))))
+
+
+# create a new matrix to contain the language X binary phoneme presence-absence
+langs_to_use <- which(
+  (! is.na(lang_codes_upd$phoible_inv)) &
+  (lang_codes_upd$exclude_geno_analysis == 0)
+)
+#  lang_codes_inventories <- #  unique(lang_codes_upd$phoible_inv[which(! is.na(lang_codes_upd$phoible_inv))])
+phoible_phoneme_mtrx <- as.table(matrix(
+  nrow = length(langs_to_use), ncol = length(phoible_phonemes_major),
+  dimnames = list(langs_to_use, phoible_phonemes_major)
+))
+
+#   similar to above, but with all phonemes, not just major phonemes
+phoible_phoneme_all_mtrx <- as.table(matrix(
+  nrow = length(langs_to_use), ncol = length(phoible_phonemes_all),
+  dimnames = list(langs_to_use, phoible_phonemes_all)
+))
+#rm(lang_codes_inventories)
+
+# populate the matrix
+for (row_ in 1:dim(phoible_phoneme_mtrx)[1]) {
+  # find phonemes available in each language
+  language <- rownames(phoible_phoneme_mtrx)[row_]
+  phonemes <- unique(sort(unlist(
+    stri_extract_all(regex="[^|<> ]*",
+                     str=phoible_aggr$Phoneme[which(phoible_aggr$InventoryID == lang_codes_upd$phoible_inv[as.numeric(language)])])
+  )))
+  phonemes_and_allophones <- unique(sort(unlist(
+    stri_extract_all(regex="[^|<> ]*",
+                     str=unlist(phoible_aggr[which(phoible_aggr$InventoryID == lang_codes_upd$phoible_inv[as.numeric(language)]), c(7,8)]))
+  )))
+  
+  # set values in matrix to 0/1
+  phoible_phoneme_mtrx[row_, ] <- unlist(lapply(phoible_phonemes_major, function(d) {
+    if (is.element(d, phonemes)) {
+      return(1)
+    } else {
+      return(0)
+    }
+  }))
+  
+  phoible_phoneme_all_mtrx[row_, ] <- unlist(lapply(phoible_phonemes_all, function(d) {
+    if (is.element(d, phonemes_and_allophones)) {
+      return(1)
+    } else {
+      return(0)
+    }
+  }))
+}; rm(language, phonemes, phonemes_and_allophones)
+
+
+# determine languages to consider; all spoken/primary
+neuroGAP_lang <- neuroGAP_data[, 1:3]
+
+neuroGAP_lang$lang_self_main <-
+  apply(neuroGAP_data[, which(grepl("lang_self", colnames(neuroGAP_data)))], 1,
+        function(d) {
+          for (l in d) {
+            # find the first language besides English (31)
+            if (l != 31) {return(l)}
+          }
+          return(31) # if no non-English language exists, return English
+        }
+)
+
+neuroGAP_lang$lang_self_all <- 
+  apply(neuroGAP_data[, which(grepl("lang_self", colnames(neuroGAP_data)))], 1,
+        function(d) {
+          to_return <- c()
+          for (l in d) {
+            # find all languages spoken, besides English (31)
+            if (is.na(l)) {next}  # skip NA
+            if (l != 31) {to_return <- c(to_return, l)}
+          }
+          return(to_return)
+        }
+)
+
+# phonemes available in all languages
+phoneme_all_neuroGAP_avg_pca <- procrustes_phoneme_pca_fxn(
+  phoible_phoneme_all_mtrx,
+  neuroGAP_lang$lang_self_all,
+  langs_to_use)
+
+# ancestral
+neuroGAP_lang$familial <- 
+  apply(neuroGAP_data[, which(
+    grepl("lang_[a-z]+_[0-9]", colnames(neuroGAP_data))
+  )], 1,
+    function(d) {
+        to_return <- c()
+        for (l in d) {
+            # find all languages spoken, besides English (31)
+            if (is.na(l)) {next}  # skip NA
+            if (l != 31) {to_return <- c(to_return, l)}
+        }
+        return(to_return)
+  }
+)
+neuroGAP_lang$matrilineal <- 
+  apply(neuroGAP_data[, which(
+    grepl("lang_mat", colnames(neuroGAP_data)) |
+      grepl("lang_mgm", colnames(neuroGAP_data))
+  )], 1,
+  function(d) {
+    to_return <- c()
+    for (l in d) {
+      # find all languages spoken, besides English (31)
+      if (is.na(l)) {next}  # skip NA
+      if (l != 31) {to_return <- c(to_return, l)}
+    }
+    return(to_return)
+  }
+)
+
+neuroGAP_lang$patrilineal <- 
+  apply(neuroGAP_data[, which(
+    grepl("lang_pat", colnames(neuroGAP_data)) |
+      grepl("lang_pgf", colnames(neuroGAP_data))
+  )], 1,
+  function(d) {
+    to_return <- c()
+    for (l in d) {
+      # find all languages spoken, besides English (31)
+      if (is.na(l)) {next}  # skip NA
+      if (l != 31) {to_return <- c(to_return, l)}
+    }
+    return(to_return)
+  }
+)
+
+neuroGAP_lang$maternal <- 
+  apply(neuroGAP_data[, which(
+    grepl("lang_mat", colnames(neuroGAP_data))
+  )], 1,
+  function(d) {
+    to_return <- c()
+    for (l in d) {
+      # find all languages spoken, besides English (31)
+      if (is.na(l)) {next}  # skip NA
+      if (l != 31) {to_return <- c(to_return, l)}
+    }
+    return(to_return)
+  }
+)
+
+neuroGAP_lang$paternal <- 
+  apply(neuroGAP_data[, which(
+    grepl("lang_pat", colnames(neuroGAP_data))
+  )], 1,
+  function(d) {
+    to_return <- c()
+    for (l in d) {
+      # find all languages spoken, besides English (31)
+      if (is.na(l)) {next}  # skip NA
+      if (l != 31) {to_return <- c(to_return, l)}
+    }
+    return(to_return)
+  }
+)
+
+neuroGAP_lang$female_fam <- 
+  apply(neuroGAP_data[, which(
+    grepl("lang_mat", colnames(neuroGAP_data)) |
+      grepl("lang_mgm", colnames(neuroGAP_data)) |
+      grepl("lang_pgm", colnames(neuroGAP_data))
+  )], 1,
+  function(d) {
+    to_return <- c()
+    for (l in d) {
+      # find all languages spoken, besides English (31)
+      if (is.na(l)) {next}  # skip NA
+      if (l != 31) {to_return <- c(to_return, l)}
+    }
+    return(to_return)
+  }
+)
+
+neuroGAP_lang$male_fam <- 
+  apply(neuroGAP_data[, which(
+    grepl("lang_pat", colnames(neuroGAP_data)) |
+      grepl("lang_pgf", colnames(neuroGAP_data)) |
+      grepl("lang_mgf", colnames(neuroGAP_data))
+  )], 1,
+  function(d) {
+    to_return <- c()
+    for (l in d) {
+      # find all languages spoken, besides English (31)
+      if (is.na(l)) {next}  # skip NA
+      if (l != 31) {to_return <- c(to_return, l)}
+    }
+    return(to_return)
+  }
+)
+
+neuroGAP_lang$parents <- 
+  apply(neuroGAP_data[, which(
+    grepl("lang_pat", colnames(neuroGAP_data)) |
+      grepl("lang_mat", colnames(neuroGAP_data))
+  )], 1,
+  function(d) {
+    to_return <- c()
+    for (l in d) {
+      # find all languages spoken, besides English (31)
+      if (is.na(l)) {next}  # skip NA
+      if (l != 31) {to_return <- c(to_return, l)}
+    }
+    return(to_return)
+  }
+)
+
+neuroGAP_lang$grandparents <- 
+  apply(neuroGAP_data[, which(
+    grepl("lang_mgf", colnames(neuroGAP_data)) |
+      grepl("lang_mgm", colnames(neuroGAP_data)) |
+      grepl("lang_pgf", colnames(neuroGAP_data)) |
+      grepl("lang_pgm", colnames(neuroGAP_data))
+  )], 1,
+  function(d) {
+    to_return <- c()
+    for (l in d) {
+      # find all languages spoken, besides English (31)
+      if (is.na(l)) {next}  # skip NA
+      if (l != 31) {to_return <- c(to_return, l)}
+    }
+    return(to_return)
+  }
+)
+
+phoneme_all_neuroGAP_mat_pca <- procrustes_phoneme_pca_fxn(phoible_phoneme_all_mtrx,
+                                                   neuroGAP_lang$matrilineal,
+                                                   langs_to_use)
+phoneme_all_neuroGAP_pat_pca <- procrustes_phoneme_pca_fxn(phoible_phoneme_all_mtrx,
+                                                   neuroGAP_lang$patrilineal,
+                                                   langs_to_use)
+
+
+# find an average position of each individual based on spoken languages
+lang_lat_long_tmp <- t(sapply(neuroGAP_lang$lang_self_all, function(d) {
+  if (is.null(d)) return(c(NA, NA))
+  if (length(d) == 1) {
+    return(as.numeric(
+      lang_codes_upd[which(lang_codes_upd$Code %in% d), c("longitude", "latitude")]))
+  } else {
+    return(as.numeric(
+      cartesian_to_spherical_mtrx(colMeans(
+        sphere_to_coord_mtrx(lang_codes_upd[which(lang_codes_upd$Code %in% d) , c("longitude", "latitude")]),
+        na.rm = T))))
+  }
+}))
+
+lang_lat_long_tmp[which(is.nan(unlist(lang_lat_long_tmp[, 1]))), ] <- NA
+
+neuroGAP_data$lang_longitude <- unlist(lang_lat_long_tmp[, 1])
+neuroGAP_data$lang_latitude <- unlist(lang_lat_long_tmp[, 2])
+
+# find an average position of each individual based on languages spoken by matrilineal ancestors
+lang_lat_long_tmp <- t(sapply(neuroGAP_lang$matrilineal, function(d) {
+  if (is.null(d)) return(c(NA, NA))
+  if (length(d) == 1) {
+    return(as.numeric(
+      lang_codes_upd[which(lang_codes_upd$Code %in% d), c("longitude", "latitude")]))
+  } else {
+    return(as.numeric(
+      cartesian_to_spherical_mtrx(colMeans(
+        sphere_to_coord_mtrx(lang_codes_upd[which(lang_codes_upd$Code %in% d) , c("longitude", "latitude")]),
+        na.rm = T))))
+  }
+}))
+
+lang_lat_long_tmp[which(is.nan(unlist(lang_lat_long_tmp[, 1]))), ] <- NA
+
+neuroGAP_data$lang_longitude_mat <- unlist(lang_lat_long_tmp[, 1])
+neuroGAP_data$lang_latitude_mat <- unlist(lang_lat_long_tmp[, 2])
+
+# find an average position of each individual based on languages spoken by patrilineal ancestors
+lang_lat_long_tmp <- t(sapply(neuroGAP_lang$patrilineal, function(d) {
+  if (is.null(d)) return(c(NA, NA))
+  if (length(d) == 1) {
+    return(as.numeric(
+      lang_codes_upd[which(lang_codes_upd$Code %in% d), c("longitude", "latitude")]))
+  } else {
+    return(as.numeric(
+      cartesian_to_spherical_mtrx(colMeans(
+        sphere_to_coord_mtrx(lang_codes_upd[which(lang_codes_upd$Code %in% d) , c("longitude", "latitude")]),
+        na.rm = T))))
+  }
+}))
+
+lang_lat_long_tmp[which(is.nan(unlist(lang_lat_long_tmp[, 1]))), ] <- NA
+
+neuroGAP_data$lang_longitude_pat <- unlist(lang_lat_long_tmp[, 1])
+neuroGAP_data$lang_latitude_pat <- unlist(lang_lat_long_tmp[, 2])
+
+
+rm(lang_lat_long_tmp)
+```
+
+
+## Procrustes: Geography and Genetics
+### All available individuals: Autosomal genetics X geography
+```{r}
+# Autosomal PC's & study-sites-as-geography
+
+procrust_fxn_short(
+  neuroGAP_data[
+    unlist(lapply(neuroGAP_auto_PC$IID, function(d) which(neuroGAP_data$IID == d))),
+    c("study_site_Longitude", "study_site_Latitude")],
+  neuroGAP_auto_PC[which(neuroGAP_auto_PC$IID %in% neuroGAP_data$IID),
+                   paste0("PC", 1:3)],
+  title = "Autosomal PC1-3, Study-site-geography.",
+  geographic = T,
+  pdf_title = "Procr_AutoPC_GeoSite_All.pdf"
+)
+
+procrust_fxn_short(
+  neuroGAP_data[
+    unlist(lapply(neuroGAP_auto_PC$IID, function(d) which(neuroGAP_data$IID == d & ! is.na(neuroGAP_data$lang_latitude)))),
+    c("lang_longitude", "lang_latitude")],
+  neuroGAP_auto_PC[which(neuroGAP_auto_PC$IID %in% neuroGAP_data$IID[which(! is.na(neuroGAP_data$lang_latitude))]),
+                   paste0("PC", 1:3)],
+  title = "Autosomal PC1-3, Language-derived-geography.", 
+  geographic = T, pdf_title = "Procr_AutoPC_GeoLang_All.pdf"
+)
+
+# Only East Africa
+procrust_fxn_short(
+  neuroGAP_data[
+    unlist(lapply(neuroGAP_auto_PC_EAfr$IID, function(d) which((neuroGAP_data$IID == d) & neuroGAP_data$study_country != "South_Africa"))),
+    c("study_site_Longitude", "study_site_Latitude")],
+  neuroGAP_auto_PC_EAfr[which(neuroGAP_auto_PC_EAfr$IID %in% neuroGAP_data$IID[which(neuroGAP_data$study_country != "South_Africa")]),
+                   paste0("PC", 1:3)],
+  title = "E.Afr Autosomal PC1-3, Study-site-geography.",
+  geographic = T, pdf_title = "Procr_AutoPC_GeoSite_EAfr.pdf",
+  EAfr = T
+)
+
+# Save plot *
+procrust_fxn_short(
+  neuroGAP_data[
+    unlist(lapply(neuroGAP_auto_PC_EAfr$IID, function(d) which(neuroGAP_data$IID == d & (neuroGAP_data$study_country != "South_Africa") & (! is.na(neuroGAP_data$lang_latitude))))),
+    c("lang_longitude", "lang_latitude")],
+  neuroGAP_auto_PC_EAfr[which(neuroGAP_auto_PC_EAfr$IID %in% neuroGAP_data$IID[which((! is.na(neuroGAP_data$lang_latitude)) & neuroGAP_data$study_country != "South_Africa")]),
+                   paste0("PC", 1:3)],
+  title = "E.Afr Autosomal PC1-3, Language-derived-geography.",
+  geographic = T, pdf_title = "Procr_AutoPC_GeoLang_EAfr.pdf",
+  EAfr = T
+)
+
+
+```
+
+### All available individuals: X-chr genetics X geography
+```{r}
+# X-chr PC's & study-sites-as-geography
+procrust_fxn_short(
+  neuroGAP_data[
+    unlist(lapply(neuroGAP_X_PC$IID, function(d) which(neuroGAP_data$IID == d))),
+    c("study_site_Longitude", "study_site_Latitude")],
+  neuroGAP_X_PC[which(neuroGAP_X_PC$IID %in% neuroGAP_data$IID),
+                   paste0("PC", 1:3)],
+  title = "X-chr PC1-3, Study-site-geography.",
+  geographic = T, pdf_title = "Procr_X_PC_GeoSite_All.pdf"
+)
+
+procrust_fxn_short(
+  neuroGAP_data[
+    unlist(lapply(neuroGAP_X_PC$IID, function(d) which(neuroGAP_data$IID == d & ! is.na(neuroGAP_data$lang_latitude)))),
+    c("lang_longitude", "lang_latitude")],
+  neuroGAP_X_PC[which(neuroGAP_X_PC$IID %in% neuroGAP_data$IID[which(! is.na(neuroGAP_data$lang_latitude))]),
+                   paste0("PC", 1:3)],
+  title = "X-chr PC1-3, Language-derived-geography.",
+  geographic = T, pdf_title = "Procr_X_PC_GeoLang_All.pdf"
+)
+
+# Only East Africa
+procrust_fxn_short(
+  neuroGAP_data[
+    unlist(lapply(neuroGAP_X_PC_EAfr$IID, function(d) which((neuroGAP_data$IID == d) & (neuroGAP_data$study_country != "South_Africa")))),
+    c("study_site_Longitude", "study_site_Latitude")],
+  neuroGAP_X_PC_EAfr[which(neuroGAP_X_PC_EAfr$IID %in% neuroGAP_data$IID[which(neuroGAP_data$study_country != "South_Africa")]),
+                   paste0("PC", 1:3)],
+  title = "E.Afr X-chr PC1-3, Study-site-geography.",
+  geographic = T, pdf_title = "Procr_X_PC_GeoSite_EAfr.pdf",
+  EAfr = T
+)
+
+procrust_fxn_short(
+  neuroGAP_data[
+    unlist(lapply(neuroGAP_X_PC_EAfr$IID, function(d) which((neuroGAP_data$IID == d) & (neuroGAP_data$study_country != "South_Africa") & ! is.na(neuroGAP_data$lang_latitude)))),
+    c("lang_longitude", "lang_latitude")],
+  neuroGAP_X_PC_EAfr[which(neuroGAP_X_PC_EAfr$IID %in% neuroGAP_data$IID[which((! is.na(neuroGAP_data$lang_latitude)) & (neuroGAP_data$study_country != "South_Africa"))]),
+                   paste0("PC", 1:3)],
+  title = "E.Afr X-chr PC1-3, Language-derived-geography.",
+  geographic = T, pdf_title = "Procr_X_PC_GeoLang_EAfr.pdf",
+  EAfr = T
+)
+
+
+```
+
+## Procrustes: Geography and Language
+### All available individuals: Phoneme inventory PC1-3 X geography
+```{r}
+
+# Phoneme inventory PC's & study-sites-as-geography
+procrust_fxn_short(
+  neuroGAP_data[
+      as.integer(rownames(phoneme_all_neuroGAP_avg_pca)),
+      c("study_site_Longitude", "study_site_Latitude")],
+  phoneme_all_neuroGAP_avg_pca[1:nrow(phoneme_all_neuroGAP_avg_pca),
+                   paste0("PC", 1:3)],
+  title = "Phoneme inv. PC1-3 X Study-site-geography",
+  pdf_title = "Procr_langSelf_GeoSite_All.pdf"
+)
+
+procrust_fxn_short(
+  neuroGAP_data[
+      intersect(as.numeric(rownames(phoneme_all_neuroGAP_avg_pca)),
+                which(! neuroGAP_data$study_country %in% c("South_Africa"))),
+      c("study_site_Longitude", "study_site_Latitude")],
+  phoneme_all_neuroGAP_avg_pca[
+        which(rownames(phoneme_all_neuroGAP_avg_pca) %in%
+                intersect(as.numeric(rownames(phoneme_all_neuroGAP_avg_pca)),
+              which(! neuroGAP_data$study_country %in% c("South_Africa")))),
+                   paste0("PC", 1:3)],
+  geographic = T,
+  title = "Phoneme inv. PC1-3 X Study-site-geography EAfr",
+  pdf_title = "Procr_EAfr_Lang_geoStudy.pdf", EAfr = T
+)
+procrust_fxn_short(
+  neuroGAP_data[
+      intersect(as.numeric(rownames(phoneme_all_neuroGAP_pca)),
+                which(! neuroGAP_data$study_country %in% c("South_Africa"))),
+      c("study_site_Longitude", "study_site_Latitude")],
+  phoneme_all_neuroGAP_pca[
+        which(rownames(phoneme_all_neuroGAP_pca) %in%
+                intersect(as.numeric(rownames(phoneme_all_neuroGAP_pca)),
+              which(! neuroGAP_data$study_country %in% c("South_Africa")))),
+                   paste0("PC", 1:3)],
+  geographic = T,
+  title = "Phoneme inv. Personal PC1-3 X Study-site-geography EAfr"
+)
+
+
+procrust_fxn_short(
+  neuroGAP_data[
+      as.integer(rownames(phoneme_all_neuroGAP_mat_pca)),
+      c("study_site_Longitude", "study_site_Latitude")],
+  phoneme_all_neuroGAP_mat_pca[1:nrow(phoneme_all_neuroGAP_mat_pca),
+                   paste0("PC", 1:3)],
+  title = "Matr. Phoneme inv. PC1-3 X Study-site-geography"
+)
+procrust_fxn_short(
+  neuroGAP_data[
+      intersect(as.numeric(rownames(phoneme_all_neuroGAP_mat_pca)),
+                which(! neuroGAP_data$study_country %in% c("South_Africa"))),
+      c("study_site_Longitude", "study_site_Latitude")],
+  phoneme_all_neuroGAP_mat_pca[
+        which(rownames(phoneme_all_neuroGAP_mat_pca) %in%
+                intersect(as.numeric(rownames(phoneme_all_neuroGAP_mat_pca)),
+              which(! neuroGAP_data$study_country %in% c("South_Africa")))),
+                   paste0("PC", 1:3)],
+  geographic = T,
+  title = "Matr. Phoneme inv. PC1-3 X Study-site-geography EAfr"
+)
+
+procrust_fxn_short(
+  neuroGAP_data[
+      as.integer(rownames(phoneme_all_neuroGAP_pat_pca)),
+      c("study_site_Longitude", "study_site_Latitude")],
+  phoneme_all_neuroGAP_pat_pca[1:nrow(phoneme_all_neuroGAP_pat_pca),
+                   paste0("PC", 1:3)],
+  title = "Patr. Phoneme inv. PC1-3 X Study-site-geography"
+)
+procrust_fxn_short(
+  neuroGAP_data[
+      intersect(as.numeric(rownames(phoneme_all_neuroGAP_pat_pca)),
+                which(! neuroGAP_data$study_country %in% c("South_Africa"))),
+      c("study_site_Longitude", "study_site_Latitude")],
+  phoneme_all_neuroGAP_pat_pca[
+        which(rownames(phoneme_all_neuroGAP_pat_pca) %in%
+                intersect(as.numeric(rownames(phoneme_all_neuroGAP_pat_pca)),
+              which(! neuroGAP_data$study_country %in% c("South_Africa")))),
+                   paste0("PC", 1:3)],
+  geographic = T,
+  title = "Patr. Phoneme inv. PC1-3 X Study-site-geography EAfr"
+)
+
+
+procrust_fxn_short(
+  neuroGAP_data[
+      as.integer(rownames(phoneme_all_neuroGAP_avg_pca)),
+      c("lang_longitude", "lang_latitude")],
+  phoneme_all_neuroGAP_avg_pca[1:nrow(phoneme_all_neuroGAP_avg_pca),
+                   paste0("PC", 1:3)],
+  title = "Phoneme inv. PC1-3 X Language-derived-geography"
+)
+
+procrust_fxn_short(
+  neuroGAP_data[
+      as.integer(rownames(phoneme_all_neuroGAP_mat_pca)),
+      c("lang_longitude", "lang_latitude")],
+  phoneme_all_neuroGAP_mat_pca[1:nrow(phoneme_all_neuroGAP_mat_pca),
+                   paste0("PC", 1:3)],
+  title = "Matr. Phoneme inv. PC1-3 X Language-derived-geography"
+)
+
+procrust_fxn_short(
+  neuroGAP_data[
+      as.integer(rownames(phoneme_all_neuroGAP_pat_pca)),
+      c("lang_longitude", "lang_latitude")],
+  phoneme_all_neuroGAP_pat_pca[1:nrow(phoneme_all_neuroGAP_pat_pca),
+                   paste0("PC", 1:3)],
+  title = "Patr. Phoneme inv. PC1-3 X Language-derived-geography"
+)
+
+
+```
+
+## Procrustes: Genetics and Phoneme Inventory
+### All available individuals: Autosomal genetics X Phonemes available in laungages
+```{r}
+# Autosomal PC's & phonemes from spoken languages
+for (dataset in c("neuroGAP_auto_PC")) {  # , "neuroGAP_7_PC", "neuroGAP_22_PC")) {
+dataset <- eval(parse(text = dataset))
+  procrust_fxn_short(
+    phoneme_all_neuroGAP_avg_pca[
+      which(rownames(phoneme_all_neuroGAP_avg_pca) %in% as.character(which(neuroGAP_data$IID %in% dataset$IID))),
+      1:3],
+    dataset[which(dataset$IID %in% neuroGAP_data$IID[as.numeric(rownames(phoneme_all_neuroGAP_avg_pca))]),
+                     paste0("PC", 1:3)],
+    geographic = F,
+    title = "Autosomal PC1-3, Phoneme inventory PC1-3.",
+    pdf_title = "Proc_AutoPC_Phoneme_All.pdf"
+  )
+  
+  procrust_fxn_short(
+    phoneme_all_neuroGAP_mat_pca[
+      which(rownames(phoneme_all_neuroGAP_mat_pca) %in% as.character(which(neuroGAP_data$IID %in% dataset$IID))),
+      1:3],
+    dataset[which(dataset$IID %in% neuroGAP_data$IID[as.numeric(rownames(phoneme_all_neuroGAP_mat_pca))]),
+                     paste0("PC", 1:3)],
+    geographic = F,
+    title = "Autosomal PC1-3, Matr. Phoneme inventory PC1-3.",
+    pdf_title = "Proc_AutoPC_MatrPhoneme_All.pdf"
+  )
+  
+  procrust_fxn_short(
+    phoneme_all_neuroGAP_pat_pca[
+      which(rownames(phoneme_all_neuroGAP_pat_pca) %in% as.character(which(neuroGAP_data$IID %in% dataset$IID))),
+      1:3],
+    dataset[which(dataset$IID %in% neuroGAP_data$IID[as.numeric(rownames(phoneme_all_neuroGAP_pat_pca))]),
+                     paste0("PC", 1:3)],
+    geographic = F,
+    title = "Autosomal PC1-3, Patr. Phoneme inventory PC1-3.",
+    pdf_title = "Proc_AutoPC_PatrPhoneme_All.pdf"
+  )
+}
+
+
+```
+
+### All available individuals: X-Chr genetics X Phonemes available in laungages
+```{r}
+# X-chr PC's & phonemes from spoken languages
+procrust_fxn_short(
+  phoneme_all_neuroGAP_avg_pca[
+    which(rownames(phoneme_all_neuroGAP_avg_pca) %in% as.character(which(neuroGAP_data$IID %in% neuroGAP_X_PC$IID))),
+    1:3],
+  neuroGAP_X_PC[which(neuroGAP_X_PC$IID %in% neuroGAP_data$IID[as.numeric(rownames(phoneme_all_neuroGAP_avg_pca))]),
+                   paste0("PC", 1:3)],
+  geographic = F,
+  title = "X-chr PC1-3, Phoneme inventory PC1-3."
+)
+
+procrust_fxn_short(
+  phoneme_all_neuroGAP_mat_pca[
+    which(rownames(phoneme_all_neuroGAP_mat_pca) %in% as.character(which(neuroGAP_data$IID %in% neuroGAP_X_PC$IID))),
+    1:3],
+  neuroGAP_X_PC[which(neuroGAP_X_PC$IID %in% neuroGAP_data$IID[as.numeric(rownames(phoneme_all_neuroGAP_mat_pca))]),
+                   paste0("PC", 1:3)],
+  geographic = F,
+  title = "X-chr PC1-3, Matr. Phoneme inventory PC1-3."
+)
+
+procrust_fxn_short(
+  phoneme_all_neuroGAP_pat_pca[
+    which(rownames(phoneme_all_neuroGAP_pat_pca) %in% as.character(which(neuroGAP_data$IID %in% neuroGAP_X_PC$IID))),
+    1:3],
+  neuroGAP_X_PC[which(neuroGAP_X_PC$IID %in% neuroGAP_data$IID[as.numeric(rownames(phoneme_all_neuroGAP_pat_pca))]),
+                   paste0("PC", 1:3)],
+  geographic = F,
+  title = "X-chr PC1-3, Patr. Phoneme inventory PC1-3."
+)
+
+```
+
+
+### East African individuals: Genetics X Phonemes available in laungages
+```{r}
+# genetic PC's & phonemes from spoken languages
+for (dataset_n in c("neuroGAP_auto_PC", "neuroGAP_X_PC")) {  # "neuroGAP_7_PC", "neuroGAP_22_PC"
+  dataset <- eval(parse(text = dataset_n))
+  dataset_rows <- which(dataset$IID %in% neuroGAP_data$IID[
+    intersect(as.numeric(rownames(phoneme_all_neuroGAP_avg_pca)),
+              which(! neuroGAP_data$study_country %in% c("South_Africa")))]
+  )
+  ling_rows <- unlist(lapply(dataset$IID[dataset_rows],
+                             function(d) {
+    which(as.numeric(rownames(phoneme_all_neuroGAP_avg_pca)) %in% which(neuroGAP_data$IID %in% d))
+  }))
+  
+  procrust_fxn_short(
+    phoneme_all_neuroGAP_avg_pca[
+      ling_rows,
+      1:3],
+    dataset[dataset_rows,
+            paste0("PC", 1:3)],
+    geographic = F,
+    title = paste0("EAfr ", dataset_n,", PC1-3, Phoneme inventory PC1-3.")
+  )
+  
+  dataset_rows <- which(dataset$IID %in% neuroGAP_data$IID[
+    intersect(as.numeric(rownames(phoneme_all_neuroGAP_mat_pca)),
+              which(! neuroGAP_data$study_country %in% c("South_Africa")))]
+  )
+  ling_rows <- unlist(lapply(dataset$IID[dataset_rows],
+                             function(d) {
+    which(as.numeric(rownames(phoneme_all_neuroGAP_mat_pca)) %in% which(neuroGAP_data$IID %in% d))
+  }))
+  
+  procrust_fxn_short(
+    phoneme_all_neuroGAP_mat_pca[
+      ling_rows,
+      1:3],
+    dataset[dataset_rows,
+            paste0("PC", 1:3)],
+    geographic = F,
+    title = paste0("EAfr ", dataset_n, ", Matr. Phoneme inventory PC1-3.")
+  )
+
+  
+  dataset_rows <- which(dataset$IID %in% neuroGAP_data$IID[
+    intersect(as.numeric(rownames(phoneme_all_neuroGAP_pat_pca)),
+              which(! neuroGAP_data$study_country %in% c("South_Africa")))]
+  )
+  ling_rows <- unlist(lapply(dataset$IID[dataset_rows],
+                             function(d) {
+    which(as.numeric(rownames(phoneme_all_neuroGAP_pat_pca)) %in% which(neuroGAP_data$IID %in% d))
+  }))
+  
+procrust_fxn_short(
+    phoneme_all_neuroGAP_pat_pca[
+      ling_rows,
+      1:3],
+    dataset[dataset_rows,
+            paste0("PC", 1:3)],
+    geographic = F,
+    title = paste0("EAfr ", dataset_n, ", Patr. Phoneme inventory PC1-3.")
+  )
+}
+
+
+
+```
+
+
+
+# Autosomal vs. X-chr procrustes
+```{r}
+# Autosomal PC's & X-Chr PCs
+for (dataset in c("neuroGAP_auto_PC", "neuroGAP_7_PC", "neuroGAP_22_PC")) {
+  title <- paste("Autosomal PC1-3, X-Chr PC1-3.:", dataset)
+  dataset <- eval(parse(text = dataset))
+  procrust_fxn_short(
+    neuroGAP_X_PC[which(sub(
+      "[0-9]*$", "", dataset$IID) %in% c("AAP", "KWP", "MAP", "MOP", "CTP")),
+      3:5],
+    dataset[which(sub(
+      "[0-9]*$", "", dataset$IID) %in% c("AAP", "KWP", "MAP", "MOP", "CTP")), 3:5],
+    geographic = F,
+    just_return_t = T,
+    title = title,
+    pdf_title = "foo"
+  )
+  rm(title)
+}
+```
+
+```{r}
+# boxplots
+
+
+# functions to generate boxplots:
+
+# procrustes of genetic vs geographic (spatial) data
+boxplot_pub_Procr_gen_geo <- function(PCs = 1:3) {
+  indiv_subset <- 1:nrow(neuroGAP_data)
+  
+  t0_list <- list()
+  t0vecs <- list()
+  
+  gen_data <- list("neuroGAP_auto_PC", "neuroGAP_X_PC")
+  
+  geo_cols <- list(
+    study_site = c("study_site_Longitude", "study_site_Latitude"),
+    lang_based = c("lang_longitude", "lang_latitude"))
+  
+  for (genetics in gen_data) {
+    print(paste(genetics, "vs geo"))
+    genetics_data <- eval(parse(text = genetics))
+    
+    i <- 0
+    for (geography in geo_cols) {
+      i <- i + 1
+      corr_name <- paste0(
+        "genetics_", sub("neuroGAP_([A-Za-z0-9]+)_PC",
+                         "\\1", genetics),
+        "_", names(geo_cols)[i]
+      )
+      
+      print(corr_name)
+      geo_rows <- intersect(
+        which(
+          (neuroGAP_data$IID %in% genetics_data$IID)
+          & (! is.na(rowSums(neuroGAP_data[, geography])))
+        ),
+        indiv_subset)
+      gen_rows <- unlist(lapply(
+        geo_rows,
+        function(geo_row) which(genetics_data$IID == neuroGAP_data$IID[geo_row])
+      ))
+      
+      t_results <- procrust_fxn_short(
+        neuroGAP_data[
+          geo_rows,
+          geography],
+        genetics_data[
+          gen_rows,
+          paste0("PC", PCs)],
+        geographic = T,
+        just_return_t = T
+      )
+      
+      t0_list[corr_name] <- t_results$t0
+      t0vecs[corr_name] <- list(t_results$t0vec)
+    }
+  }
+  
+  ###
+  
+  plotting_df <- as.data.frame(
+    list(
+      genetics=c(
+        rep(c("Autosomal", "X-chr."), rep(1000, 2))
+      ),
+      locations=c(
+        rep(rep(c("Study site", "Language-based"),
+                rep(500, 2)), 2)),
+      correlations=unlist(t0vecs),
+      true_correlations=rep(unlist(t0_list), rep(500, length(t0_list))))
+  )
+  
+  breaks <- seq(floor(min(plotting_df$correlations) * 20) / 20,
+                ceiling(max(plotting_df$correlations) * 20) / 20,
+                0.05)
+  
+  plot_title <- "Procrustes correlations between \ngeography and genetics"
+  
+  ggp <- ggplot(as.data.frame(plotting_df),
+                aes(x=locations, y=correlations,
+                    fill=factor(genetics, level=c(
+                      "Autosomal", "X-chr.")
+                    ))) +
+    geom_boxplot(notch=T, notchwidth = 0.3, varwidth = TRUE) +
+    labs(fill = NULL, title = NULL) +
+    xlim("Study site", "Language-based") + xlab("Geographic location") +
+    ylab("Procrustes Correlation") + scale_y_continuous(
+      breaks = breaks, minor_breaks = breaks) +
+    scale_fill_manual(values=c(
+      "Autosomal" = "#C0C0C0",
+      "X-chr." = "#D04040")) +
+    theme_bw() + theme(
+      rect = element_blank(),
+      axis.line = element_line(color = '#505050', size = .5),
+      panel.grid = element_blank(),
+      # panel.grid.minor.y = element_line(color = '#CCCCCC', size = .1),
+      # panel.grid.major.y = element_line(color = '#CCCCCC', size = .2),
+      plot.title = element_text(size = 18, hjust = 0.5),
+      axis.ticks.length = unit(-0.05, "in"),
+      axis.text.y = element_text(margin=unit(c(0.3,0.3,0.3,0.3), "cm")),
+      axis.text.x = element_text(margin=unit(c(0.3,0.3,0.3,0.3), "cm")),
+      axis.ticks.x = element_blank(),
+      # aspect.ratio = 0.8,
+      legend.background = element_rect(color = "white", fill = "white"),
+      text = element_text(size = 16)
+    )
+  
+  return(ggp)
+}
+
+# procrustes of linguistic vs geographic (spatial) data
+boxplot_pub_Procr_lang_geo <- function(PCs = 1:3) {
+  
+  indiv_subset <- 1:nrow(neuroGAP_data)
+  
+  print("calculating linguistic PCAs...")
+  phoneme_all_neuroGAP_avg_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$lang_self_all,
+    langs_to_use,
+    # neuroGAP_lang$parents, neuroGAP_lang$grandparents,
+    indiv_subset = indiv_subset)
+  phoneme_all_neuroGAP_mat_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$matrilineal, langs_to_use,
+    indiv_subset = indiv_subset)
+  phoneme_all_neuroGAP_pat_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$patrilineal, langs_to_use,
+    indiv_subset = indiv_subset)
+  phoneme_all_neuroGAP_famW_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$lang_self_all,
+    langs_to_use,
+    neuroGAP_lang$parents, neuroGAP_lang$grandparents,
+    indiv_subset = indiv_subset)
+  
+  t0_list <- list()
+  t0vecs <- list()
+  
+  linguistic_data <- list(
+    Indiv="phoneme_all_neuroGAP_avg_pca",
+    Matr="phoneme_all_neuroGAP_mat_pca",
+    Patr="phoneme_all_neuroGAP_pat_pca",
+    Fam="phoneme_all_neuroGAP_famW_pca")
+  
+  geo_cols <- list(
+    study_site = c("study_site_Longitude", "study_site_Latitude"),
+    lang_based = c("lang_longitude", "lang_latitude"))
+  
+  for (linguistics in linguistic_data) {
+    
+    linguistic_PCs <- eval(parse(text = linguistics))
+    
+    i <- 0
+    for (geography in geo_cols) {
+      i <- i + 1
+      corr_name <- paste0(
+        "linguistics_", sub("phoneme_all_neuroGAP_([A-Za-z0-9]+)_pca",
+                            "\\1", linguistics),
+        "_", names(geo_cols)[i]
+      )
+      
+      print(corr_name)
+      
+      geo_rows <- intersect(
+        rownames(linguistic_PCs),
+        indiv_subset)
+      ling_rows <- unlist(lapply(
+        geo_rows,
+        function(geo_row) which(rownames(linguistic_PCs) == geo_row)
+      ))
+      
+      t_results <- procrust_fxn_short(
+        neuroGAP_data[
+          geo_rows,
+          geography],
+        linguistic_PCs[
+          ling_rows,
+          PCs],
+        geographic = T,
+        just_return_t = T)
+      t0_list[corr_name] <- t_results$t0
+      t0vecs[corr_name] <- list(t_results$t0vec)
+    }
+  }
+  
+  ###
+  
+  plotting_df <- as.data.frame(
+    list(
+      linguistics=c(
+        rep(c("Indiv.", "Matr.", "Patr.", "Familial"), rep(1000, 4))
+      ),
+      locations=c(
+        rep(rep(c("Study site", "Language-based"),
+                rep(500, 2)), 4)),
+      correlations=unlist(t0vecs),
+      true_correlations=rep(unlist(t0_list), rep(500, length(t0_list))))
+  )
+  
+  breaks <- seq(floor(min(plotting_df$correlations) * 20) / 20,
+                ceiling(max(plotting_df$correlations) * 20) / 20,
+                0.05)
+  
+  plot_title <- "Procrustes correlations between \ngeography and lanugage"
+  
+  ggp <- ggplot(as.data.frame(plotting_df),
+                aes(x=locations, y=correlations,
+                    fill=factor(linguistics, level=c(
+                      "Indiv.", "Matr.", "Patr.", "Familial")
+                    ))) +
+    geom_boxplot(notch=T, notchwidth = 0.3, varwidth = TRUE) +
+    labs(fill = "Languages \n spoken by:", title = NULL) +
+    xlim("Study site", "Language-based") + xlab("Geographic location") +
+    ylab("Procrustes Correlation") + scale_y_continuous(
+      minor_breaks = breaks) + scale_fill_manual(values=c(
+        "Indiv." = "#4070B0",
+        "Matr." = "#B07020",
+        "Patr." = "#708090",
+        "Familial" = "#B05070")) +
+    theme_bw() + theme(
+      rect = element_blank(),
+      axis.line = element_line(color = '#505050', size = .5),
+      panel.grid = element_blank(),
+      # panel.grid.minor.y = element_line(color = '#CCCCCC', size = .1),
+      # panel.grid.major.y = element_line(color = '#CCCCCC', size = .2),
+      plot.title = element_text(size = 18, hjust = 0.5),
+      axis.ticks.length = unit(-0.05, "in"),
+      axis.text.y = element_text(margin=unit(c(0.3,0.3,0.3,0.3), "cm")),
+      axis.text.x = element_text(margin=unit(c(0.3,0.3,0.3,0.3), "cm")),
+      axis.ticks.x = element_blank(),
+      # aspect.ratio = 0.8,
+      legend.background = element_rect(color = "white", fill = "white"),
+      text = element_text(size = 16)
+    )
+  
+  return(ggp)
+}
+
+# procrustes of linguistic vs genetic data
+boxplot_pub_Procr_lang_gen <- function(PCs = 1:3) {
+  
+  indiv_subset <- 1:nrow(neuroGAP_data)
+  
+  
+  print("calculating linguistic PCAs...")
+  phoneme_all_neuroGAP_avg_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$lang_self_all,
+    langs_to_use,
+    # neuroGAP_lang$parents, neuroGAP_lang$grandparents,
+    indiv_subset = indiv_subset)
+  phoneme_all_neuroGAP_mat_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$matrilineal, langs_to_use,
+    indiv_subset = indiv_subset)
+  phoneme_all_neuroGAP_pat_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$patrilineal, langs_to_use,
+    indiv_subset = indiv_subset)
+  phoneme_all_neuroGAP_famW_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$lang_self_all,
+    langs_to_use,
+    neuroGAP_lang$parents, neuroGAP_lang$grandparents,
+    indiv_subset = indiv_subset)
+  
+  t0_list <- list()
+  t0vecs <- list()
+  
+  linguistic_data <- list(
+    Indiv="phoneme_all_neuroGAP_avg_pca",
+    Matr="phoneme_all_neuroGAP_mat_pca",
+    Patr="phoneme_all_neuroGAP_pat_pca",
+    Fam="phoneme_all_neuroGAP_famW_pca")
+  
+  gen_data <- list("neuroGAP_auto_PC", "neuroGAP_X_PC")
+  
+  for (genetics in gen_data) {
+    print(paste(genetics, "vs geo"))
+    genetics_data <- eval(parse(text = genetics))
+    
+    for (linguistics in linguistic_data) {
+      
+      linguistic_PCs <- eval(parse(text = linguistics))
+      
+      corr_name <- paste0(
+        "linguistics:", sub("phoneme_all_neuroGAP_([A-Za-z0-9]+)_pca",
+                            "\\1", linguistics), "_",
+        "genetics:", sub("neuroGAP_([A-Za-z0-9]+)_PC",
+                         "\\1", genetics)
+      )
+      
+      print(corr_name)
+      
+      gen_rows <- which(
+        genetics_data$IID %in% 
+          neuroGAP_data$IID[intersect(
+            rownames(linguistic_PCs),
+            indiv_subset)]
+      )
+      ling_rows <- unlist(lapply(
+        gen_rows,
+        function(gen_row) which(
+          neuroGAP_data$IID[as.numeric(rownames(linguistic_PCs))] ==
+            genetics_data$IID[gen_row])
+      ))
+      
+      t_results <- procrust_fxn_short(
+        genetics_data[
+          gen_rows,
+          paste0("PC", PCs)],
+        linguistic_PCs[
+          ling_rows,
+          PCs],
+        geographic = T,
+        just_return_t = T)
+      t0_list[corr_name] <- t_results$t0
+      t0vecs[corr_name] <- list(t_results$t0vec)
+    }
+    
+  }  
+  
+  
+  plotting_df <- as.data.frame(
+    list(
+      genetics=c(
+        rep(c("Autosomal", "X-chr."), rep(2000, 2))
+      ),
+      linguistics=c(
+        rep(rep(c("Indiv.", "Matr.", "Patr.", "Familial"),
+                rep(500, 4)), 2)),
+      correlations=unlist(t0vecs),
+      true_correlations=rep(unlist(t0_list), rep(500, length(t0_list))))
+  )
+  
+  breaks <- seq(floor(min(plotting_df$correlations) * 20) / 20,
+                ceiling(max(plotting_df$correlations) * 20) / 20,
+                0.05)
+  
+  plot_title <- "Procrustes correlations between \ngenetics and lanugage"
+  
+  ggp <- ggplot(as.data.frame(plotting_df),
+                aes(x=genetics, y=correlations,
+                    fill=factor(linguistics, level=c(
+                      "Indiv.", "Matr.", "Patr.", "Familial")
+                    ))) +
+    geom_boxplot(notch=T, notchwidth = 0.3, varwidth = TRUE) +
+    labs(fill = "Languages \nspoken by:", title = NULL) +
+    xlim("Autosomal", "X-chr.") + xlab("Genetic PCs") +
+    ylab("Procrustes Correlation") + scale_y_continuous(
+      minor_breaks = breaks) + scale_fill_manual(values=c(
+        "Indiv." = "#4070B0",
+        "Matr." = "#B07020",
+        "Patr." = "#708090",
+        "Familial" = "#B05070")) +
+    theme_bw() + theme(
+      rect = element_blank(),
+      axis.line = element_line(color = '#505050', size = .5),
+      panel.grid = element_blank(),
+      # panel.grid.minor.y = element_line(color = '#CCCCCC', size = .1),
+      # panel.grid.major.y = element_line(color = '#CCCCCC', size = .2),
+      plot.title = element_text(size = 18, hjust = 0.5),
+      axis.ticks.length = unit(-0.05, "in"),
+      axis.text.y = element_text(margin=unit(c(0.3,0.3,0.3,0.3), "cm")),
+      axis.text.x = element_text(margin=unit(c(0.3,0.3,0.3,0.3), "cm")),
+      axis.ticks.x = element_blank(),
+      # aspect.ratio = 0.8,
+      legend.background = element_rect(color = "white", fill = "white"),
+      text = element_text(size = 16)
+    )
+  
+  return(ggp)
+}
+ 
+
+# procrustes of genetic vs geographic (spatial) data in East Africa
+boxplot_pub_Procr_gen_geo_EAfr <- function(PCs = 1:3) {
+  indiv_subset <- which(neuroGAP_data$study_country != "South_Africa")
+  
+  t0_list <- list()
+  t0vecs <- list()
+  
+  gen_data <- list("neuroGAP_auto_PC_EAfr", "neuroGAP_X_PC_EAfr")
+  
+  geo_cols <- list(
+    study_site = c("study_site_Longitude", "study_site_Latitude"),
+    lang_based = c("lang_longitude", "lang_latitude"))
+  
+  for (genetics in gen_data) {
+    print(paste(genetics, "vs geo"))
+    genetics_data <- eval(parse(text = genetics))
+    
+    i <- 0
+    for (geography in geo_cols) {
+      i <- i + 1
+      corr_name <- paste0(
+        "genetics_", sub("neuroGAP_([A-Za-z0-9]+)_PC",
+                         "\\1", genetics),
+        "_", names(geo_cols)[i]
+      )
+      
+      print(corr_name)
+      geo_rows <- intersect(
+        which(
+          (neuroGAP_data$IID %in% genetics_data$IID)
+          & (! is.na(rowSums(neuroGAP_data[, geography])))
+        ),
+        indiv_subset)
+      gen_rows <- unlist(lapply(
+        geo_rows,
+        function(geo_row) which(genetics_data$IID == neuroGAP_data$IID[geo_row])
+      ))
+      
+      t_results <- procrust_fxn_short(
+        neuroGAP_data[
+          geo_rows,
+          geography],
+        genetics_data[
+          gen_rows,
+          paste0("PC", PCs)],
+        geographic = T,
+        just_return_t = T
+      )
+      
+      t0_list[corr_name] <- t_results$t0
+      t0vecs[corr_name] <- list(t_results$t0vec)
+    }
+  }
+  
+  ###
+  
+  plotting_df <- as.data.frame(
+    list(
+      genetics=c(
+        rep(c("Autosomal", "X-chr."), rep(1000, 2))
+      ),
+      locations=c(
+        rep(rep(c("Study site", "Language-based"),
+                rep(500, 2)), 2)),
+      correlations=unlist(t0vecs),
+      true_correlations=rep(unlist(t0_list), rep(500, length(t0_list))))
+  )
+  
+  breaks <- seq(floor(min(plotting_df$correlations) * 20) / 20,
+                ceiling(max(plotting_df$correlations) * 20) / 20,
+                0.05)
+  
+  plot_title <- "Procrustes correlations between \ngeography and genetics\nin East Africa"
+  
+  ggp <- ggplot(as.data.frame(plotting_df),
+                aes(x=locations, y=correlations,
+                    fill=factor(genetics, level=c(
+                      "Autosomal", "X-chr.")
+                    ))) +
+    geom_boxplot(notch=T, notchwidth = 0.3, varwidth = TRUE) +
+    labs(fill = NULL, title = NULL) +
+    xlim("Study site", "Language-based") + xlab("Geographic location") +
+    ylab("Procrustes Correlation") + scale_y_continuous(
+      breaks = breaks, minor_breaks = breaks) +
+    scale_fill_manual(values=c(
+      "Autosomal" = "#C0C0C0",
+      "X-chr." = "#D04040")) +
+    theme_bw() + theme(
+      rect = element_blank(),
+      axis.line = element_line(color = '#505050', size = .5),
+      panel.grid = element_blank(),
+      # panel.grid.minor.y = element_line(color = '#CCCCCC', size = .1),
+      # panel.grid.major.y = element_line(color = '#CCCCCC', size = .2),
+      plot.title = element_text(size = 18, hjust = 0.5),
+      axis.ticks.length = unit(-0.05, "in"),
+      axis.text.y = element_text(margin=unit(c(0.3,0.3,0.3,0.3), "cm")),
+      axis.text.x = element_text(margin=unit(c(0.3,0.3,0.3,0.3), "cm")),
+      axis.ticks.x = element_blank(),
+      # aspect.ratio = 0.8,
+      legend.background = element_rect(color = "white", fill = "white"),
+      text = element_text(size = 16)
+    )
+  
+  return(ggp)
+}
+
+# procrustes of linguistic vs geographic (spatial) data in East Africa
+boxplot_pub_Procr_lang_geo_EAfr <- function(PCs = 1:3) {
+  
+  indiv_subset <- which(neuroGAP_data$study_country != "South_Africa")
+  
+  print("calculating linguistic PCAs...")
+  phoneme_all_neuroGAP_avg_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$lang_self_all,
+    langs_to_use,
+    # neuroGAP_lang$parents, neuroGAP_lang$grandparents,
+    indiv_subset = indiv_subset)
+  phoneme_all_neuroGAP_mat_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$matrilineal, langs_to_use,
+    indiv_subset = indiv_subset)
+  phoneme_all_neuroGAP_pat_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$patrilineal, langs_to_use,
+    indiv_subset = indiv_subset)
+  phoneme_all_neuroGAP_famW_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$lang_self_all,
+    langs_to_use,
+    neuroGAP_lang$parents, neuroGAP_lang$grandparents,
+    indiv_subset = indiv_subset)
+  
+  t0_list <- list()
+  t0vecs <- list()
+  
+  linguistic_data <- list(
+    Indiv="phoneme_all_neuroGAP_avg_pca",
+    Matr="phoneme_all_neuroGAP_mat_pca",
+    Patr="phoneme_all_neuroGAP_pat_pca",
+    Fam="phoneme_all_neuroGAP_famW_pca")
+  
+  geo_cols <- list(
+    study_site = c("study_site_Longitude", "study_site_Latitude"),
+    lang_based = c("lang_longitude", "lang_latitude"))
+  
+  for (linguistics in linguistic_data) {
+    
+    linguistic_PCs <- eval(parse(text = linguistics))
+    
+    i <- 0
+    for (geography in geo_cols) {
+      i <- i + 1
+      corr_name <- paste0(
+        "linguistics_", sub("phoneme_all_neuroGAP_([A-Za-z0-9]+)_pca",
+                            "\\1", linguistics),
+        "_", names(geo_cols)[i]
+      )
+      
+      print(corr_name)
+      
+      geo_rows <- intersect(
+        rownames(linguistic_PCs),
+        indiv_subset)
+      ling_rows <- unlist(lapply(
+        geo_rows,
+        function(geo_row) which(rownames(linguistic_PCs) == geo_row)
+      ))
+      
+      t_results <- procrust_fxn_short(
+        neuroGAP_data[
+          geo_rows,
+          geography],
+        linguistic_PCs[
+          ling_rows,
+          PCs],
+        geographic = T,
+        just_return_t = T)
+      t0_list[corr_name] <- t_results$t0
+      t0vecs[corr_name] <- list(t_results$t0vec)
+    }
+  }
+  
+  ###
+  
+  plotting_df <- as.data.frame(
+    list(
+      linguistics=c(
+        rep(c("Indiv.", "Matr.", "Patr.", "Familial"), rep(1000, 4))
+      ),
+      locations=c(
+        rep(rep(c("Study site", "Language-based"),
+                rep(500, 2)), 4)),
+      correlations=unlist(t0vecs),
+      true_correlations=rep(unlist(t0_list), rep(500, length(t0_list))))
+  )
+  
+  breaks <- seq(floor(min(plotting_df$correlations) * 20) / 20,
+                ceiling(max(plotting_df$correlations) * 20) / 20,
+                0.05)
+  
+  plot_title <- "Procrustes correlations between \ngeography and lanugage\nin East Africa"
+  
+  ggp <- ggplot(as.data.frame(plotting_df),
+                aes(x=locations, y=correlations,
+                    fill=factor(linguistics, level=c(
+                      "Indiv.", "Matr.", "Patr.", "Familial")
+                    ))) +
+    geom_boxplot(notch=T, notchwidth = 0.3, varwidth = TRUE) +
+    labs(fill = "Languages \n spoken by:", title = NULL) +
+    xlim("Study site", "Language-based") + xlab("Geographic location") +
+    ylab("Procrustes Correlation") + scale_y_continuous(
+      minor_breaks = breaks) + scale_fill_manual(values=c(
+        "Indiv." = "#4070B0",
+        "Matr." = "#B07020",
+        "Patr." = "#708090",
+        "Familial" = "#B05070")) +
+    theme_bw() + theme(
+      rect = element_blank(),
+      axis.line = element_line(color = '#505050', size = .5),
+      panel.grid = element_blank(),
+      # panel.grid.minor.y = element_line(color = '#CCCCCC', size = .1),
+      # panel.grid.major.y = element_line(color = '#CCCCCC', size = .2),
+      plot.title = element_text(size = 18, hjust = 0.5),
+      axis.ticks.length = unit(-0.05, "in"),
+      axis.text.y = element_text(margin=unit(c(0.3,0.3,0.3,0.3), "cm")),
+      axis.text.x = element_text(margin=unit(c(0.3,0.3,0.3,0.3), "cm")),
+      axis.ticks.x = element_blank(),
+      # aspect.ratio = 0.8,
+      legend.background = element_rect(color = "white", fill = "white"),
+      text = element_text(size = 16)
+    )
+  
+  return(ggp)
+}
+
+# procrustes of linguistic vs genetic data in East Africa
+boxplot_pub_Procr_lang_gen_EAfr <- function(PCs = 1:3) {
+  
+  indiv_subset <- which(neuroGAP_data$study_country != "South_Africa")
+  
+  
+  print("calculating linguistic PCAs...")
+  phoneme_all_neuroGAP_avg_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$lang_self_all,
+    langs_to_use,
+    # neuroGAP_lang$parents, neuroGAP_lang$grandparents,
+    indiv_subset = indiv_subset)
+  phoneme_all_neuroGAP_mat_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$matrilineal, langs_to_use,
+    indiv_subset = indiv_subset)
+  phoneme_all_neuroGAP_pat_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$patrilineal, langs_to_use,
+    indiv_subset = indiv_subset)
+  phoneme_all_neuroGAP_famW_pca <- procrustes_phoneme_pca_fxn(
+    phoible_phoneme_all_mtrx, neuroGAP_lang$lang_self_all,
+    langs_to_use,
+    neuroGAP_lang$parents, neuroGAP_lang$grandparents,
+    indiv_subset = indiv_subset)
+  
+  t0_list <- list()
+  t0vecs <- list()
+  
+  linguistic_data <- list(
+    Indiv="phoneme_all_neuroGAP_avg_pca",
+    Matr="phoneme_all_neuroGAP_mat_pca",
+    Patr="phoneme_all_neuroGAP_pat_pca",
+    Fam="phoneme_all_neuroGAP_famW_pca")
+  
+  gen_data <- list("neuroGAP_auto_PC_EAfr", "neuroGAP_X_PC_EAfr")
+  
+  for (genetics in gen_data) {
+    print(paste(genetics, "vs geo"))
+    genetics_data <- eval(parse(text = genetics))
+    
+    for (linguistics in linguistic_data) {
+      
+      linguistic_PCs <- eval(parse(text = linguistics))
+      
+      corr_name <- paste0(
+        "linguistics:", sub("phoneme_all_neuroGAP_([A-Za-z0-9]+)_pca",
+                            "\\1", linguistics), "_",
+        "genetics:", sub("neuroGAP_([A-Za-z0-9]+)_PC",
+                         "\\1", genetics)
+      )
+      
+      print(corr_name)
+      
+      gen_rows <- which(
+        genetics_data$IID %in% 
+          neuroGAP_data$IID[intersect(
+            rownames(linguistic_PCs),
+            indiv_subset)]
+      )
+      ling_rows <- unlist(lapply(
+        gen_rows,
+        function(gen_row) which(
+          neuroGAP_data$IID[as.numeric(rownames(linguistic_PCs))] ==
+            genetics_data$IID[gen_row])
+      ))
+      
+      t_results <- procrust_fxn_short(
+        genetics_data[
+          gen_rows,
+          paste0("PC", PCs)],
+        linguistic_PCs[
+          ling_rows,
+          PCs],
+        geographic = T,
+        just_return_t = T)
+      t0_list[corr_name] <- t_results$t0
+      t0vecs[corr_name] <- list(t_results$t0vec)
+    }
+    
+  }  
+  
+  
+  plotting_df <- as.data.frame(
+    list(
+      genetics=c(
+        rep(c("Autosomal", "X-chr."), rep(2000, 2))
+      ),
+      linguistics=c(
+        rep(rep(c("Indiv.", "Matr.", "Patr.", "Familial"),
+                rep(500, 4)), 2)),
+      correlations=unlist(t0vecs),
+      true_correlations=rep(unlist(t0_list), rep(500, length(t0_list))))
+  )
+  
+  breaks <- seq(floor(min(plotting_df$correlations) * 20) / 20,
+                ceiling(max(plotting_df$correlations) * 20) / 20,
+                0.05)
+  
+  plot_title <- "Procrustes correlations between \ngenetics and lanugage\nin East Africa"
+  
+  ggp <- ggplot(as.data.frame(plotting_df),
+                aes(x=genetics, y=correlations,
+                    fill=factor(linguistics, level=c(
+                      "Indiv.", "Matr.", "Patr.", "Familial")
+                    ))) +
+    geom_boxplot(notch=T, notchwidth = 0.3, varwidth = TRUE) +
+    labs(fill = "Languages \nspoken by:", title = NULL) +
+    xlim("Autosomal", "X-chr.") + xlab("Genetic PCs") +
+    ylab("Procrustes Correlation") + scale_y_continuous(
+      minor_breaks = breaks) + scale_fill_manual(values=c(
+        "Indiv." = "#4070B0",
+        "Matr." = "#B07020",
+        "Patr." = "#708090",
+        "Familial" = "#B05070")) +
+    theme_bw() + theme(
+      rect = element_blank(),
+      axis.line = element_line(color = '#505050', size = .5),
+      panel.grid = element_blank(),
+      # panel.grid.minor.y = element_line(color = '#CCCCCC', size = .1),
+      # panel.grid.major.y = element_line(color = '#CCCCCC', size = .2),
+      plot.title = element_text(size = 18, hjust = 0.5),
+      axis.ticks.length = unit(-0.05, "in"),
+      axis.text.y = element_text(margin=unit(c(0.3,0.3,0.3,0.3), "cm")),
+      axis.text.x = element_text(margin=unit(c(0.3,0.3,0.3,0.3), "cm")),
+      axis.ticks.x = element_blank(),
+      # aspect.ratio = 0.8,
+      legend.background = element_rect(color = "white", fill = "white"),
+      text = element_text(size = 16)
+    )
+  
+  return(ggp)
+}
+
+
+bp_pub_Procr_gen_geo <- boxplot_pub_Procr_gen_geo();
+bp_pub_Procr_lang_geo <- boxplot_pub_Procr_lang_geo();
+bp_pub_Procr_lang_gen <- boxplot_pub_Procr_lang_gen();
+bp_pub_Procr_gen_geo_EAfr <- boxplot_pub_Procr_gen_geo_EAfr();
+bp_pub_Procr_lang_geo_EAfr <- boxplot_pub_Procr_lang_geo_EAfr();
+bp_pub_Procr_lang_gen_EAfr <- boxplot_pub_Procr_lang_gen_EAfr()
+
+
+# plot all the boxplots in one figure
+ggarrange(
+  ggarrange(
+    bp_pub_Procr_gen_geo, bp_pub_Procr_gen_geo_EAfr,
+    nrow = 1, ncol = 2, common.legend = T, legend = "bottom",
+    labels = c("A", "B")
+  ), ggarrange(
+    bp_pub_Procr_lang_geo, bp_pub_Procr_lang_geo_EAfr,
+    bp_pub_Procr_lang_gen, bp_pub_Procr_lang_gen_EAfr,
+    nrow = 2, ncol = 2, common.legend = T, legend = "bottom",
+    labels = c("C", "D", "E", "F")),
+  nrow = 2, heights = c(1, 2))
+
+
+```
